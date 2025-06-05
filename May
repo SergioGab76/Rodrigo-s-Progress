@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Rodrigo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #111827; 
+            color: #F3F4F6; 
+        }
+        .material-card {
+            background-color: #1F2937; 
+            border-radius: 0.75rem; 
+            padding: 1.5rem; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #374151; 
+        }
+        .main-chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px; 
+            margin-left: auto;
+            margin-right: auto;
+            height: 450px; 
+            max-height: 500px;
+        }
+        @media (min-width: 768px) { 
+            .main-chart-container {
+                height: 500px;
+                max-height: 600px;
+            }
+        }
+        .stat-item {
+            background-color: #1F2937;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #374151;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .stat-label {
+            font-size: 0.875rem; 
+            color: #9CA3AF; 
+        }
+        .page-title {
+            color: #00F0B5; 
+        }
+        .section-subtitle { color: #00E0F0; }
+        .percentage-table th, .percentage-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #374151;
+        }
+        .percentage-table th {
+            color: #9CA3AF;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .percentage-table td {
+            font-size: 0.95rem;
+        }
+        .increase-positive { color: #34D399; } /* Green */
+        .increase-negative { color: #F87171; } /* Red */
+        .increase-neutral { color: #9CA3AF; } /* Gray */
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Chosen Color Palette: Energetic & Playful (#00F0B5, #00E0F0, #7060F0, #F000B0, #F0C000) -->
+    <!-- No SVG graphics or Mermaid JS were used in this document. All charts are rendered using Chart.js on Canvas. -->
+    <!-- 
+        Infographic Narrative & Structure Plan (User Customized):
+        1.  Header: Title.
+        2.  Summary Stats Section: Total Sessions, Total Reps, Total Sets (for bloque starting 5/2/2025).
+        3.  Main Line Graph Section: 
+            - Y-axis: Weight (kg).
+            - X-axis: Date (includes "Bloque Anterior" for 4/29/2025).
+            - Lines: One per exercise, showing max weight for that day (with visual offset for overlaps). Tooltip shows original weight.
+            - Legend: Exercise names and colors.
+        4.  Percentage Increase Table Section.
+        5.  Footer: Technology note.
+    -->
+
+    <div class="min-h-screen container mx-auto px-4 py-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl sm:text-5xl font-bold page-title">Informe de Rodrigo</h1>
+        </header>
+
+        <section id="summary-stats" class="mb-10">
+            <h2 class="text-2xl font-semibold text-center mb-6 section-subtitle" id="summaryBloqueTitle">Resumen del Bloque de Entrenamiento</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto text-center">
+                <div class="stat-item">
+                    <p class="stat-value" id="statTotalSessions">--</p>
+                    <p class="stat-label">Sesiones Totales del Bloque</p>
+                </div>
+                <div class="stat-item">
+                    <p class="stat-value" id="statTotalReps">--</p>
+                    <p class="stat-label">Repeticiones Totales del Bloque</p>
+                </div>
+                <div class="stat-item">
+                    <p class="stat-value" id="statTotalSets">--</p>
+                    <p class="stat-label">Series Totales del Bloque</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="main-line-graph" class="mb-12">
+            <div class="material-card">
+                <h2 class="text-2xl font-semibold mb-6 page-title text-center">Progresión de Peso Máximo por Ejercicio</h2>
+                <div class="main-chart-container">
+                    <canvas id="exerciseWeightProgressChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="percentage-increase-section" class="mb-12">
+            <div class="material-card">
+                <h2 class="text-2xl font-semibold mb-6 page-title text-center">Análisis de Incremento de Peso (vs Bloque Anterior)</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full percentage-table">
+                        <thead>
+                            <tr>
+                                <th>Ejercicio</th>
+                                <th>Máx. Bloque Anterior (kg)</th>
+                                <th>Último Máx. Bloque Actual (kg)</th>
+                                <th>Aumento (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="percentageIncreaseTableBody">
+                            <!-- Rows will be injected here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <footer class="text-center mt-16 py-6 border-t border-gray-700">
+            <p class="text-sm text-gray-500">Infografía generada a partir de datos de entrenamiento. Gráfico renderizado con Chart.js en Canvas.</p>
+            <p class="text-xs text-gray-600 mt-1">No se utilizaron gráficos SVG ni la librería Mermaid JS en la creación de este documento.</p>
+        </footer>
+    </div>
+
+    <script>
+        const rawClientData = [
+            '4/29/2025Peso Muerto Hex1970','4/29/2025Peso Muerto Hex1970','4/29/2025Peso Muerto Hex11070','4/29/2025Sentadilla11036','4/29/2025Sentadilla11036','4/29/2025Sentadilla11036','4/29/2025Biceps11214','4/29/2025Biceps11214','4/29/2025Biceps11114','4/29/2025Pecho Anillas1100','4/29/2025Pecho Anillas1100','4/29/2025Pecho Anillas1100','4/29/2025Remo Anillas1100','4/29/2025Remo Anillas1100','4/29/2025Remo Anillas1100','4/29/2025Press de Hombros11024','4/29/2025Press de Hombros11024','4/29/2025Press de Hombros1824','4/29/2025Triceps11214','4/29/2025Triceps11214','4/29/2025Triceps11214',
+            '5/2/2025Peso Muerto Hex1970','5/2/2025Peso Muerto Hex1970','5/2/2025Peso Muerto Hex11070','5/2/2025Sentadilla11036','5/2/2025Sentadilla11036','5/2/2025Sentadilla11036','5/2/2025Biceps11214','5/2/2025Biceps11214','5/2/2025Biceps11114','5/2/2025Pecho Anillas1100','5/2/2025Pecho Anillas1100','5/2/2025Pecho Anillas1100','5/2/2025Remo Anillas1100','5/2/2025Remo Anillas1100','5/2/2025Remo Anillas1100','5/2/2025Press de Hombros11024','5/2/2025Press de Hombros11024','5/2/2025Press de Hombros1824','5/2/2025Triceps11214','5/2/2025Triceps11214','5/2/2025Triceps11214',
+            '5/5/2025Peso Muerto Hex11070','5/5/2025Peso Muerto Hex11070','5/5/2025Peso Muerto Hex11070','5/5/2025Sentadilla11036','5/5/2025Sentadilla11036','5/5/2025Sentadilla11036','5/5/2025Biceps11214','5/5/2025Biceps11214','5/5/2025Biceps11214','5/5/2025Pecho Anillas1100','5/5/2025Pecho Anillas1100','5/5/2025Pecho Anillas1100','5/5/2025Remo Anillas1100','5/5/2025Remo Anillas1100','5/5/2025Remo Anillas1100','5/5/2025Press de Hombros11024','5/5/2025Press de Hombros11024','5/5/2025Press de Hombros1924','5/5/2025Triceps11214','5/5/2025Triceps11214','5/5/2025Triceps11214',
+            '5/7/2025Peso Muerto Hex11070','5/7/2025Peso Muerto Hex11070','5/7/2025Peso Muerto Hex11070','5/7/2025Sentadilla11036','5/7/2025Sentadilla11036','5/7/2025Sentadilla11036','5/7/2025Biceps11016','5/7/2025Biceps11016','5/7/2025Biceps11016','5/7/2025Pecho Anillas1100','5/7/2025Pecho Anillas1100','5/7/2025Pecho Anillas1100','5/7/2025Remo Anillas1100','5/7/2025Remo Anillas1100','5/7/2025Remo Anillas1100','5/7/2025Press de Hombros11024','5/7/2025Press de Hombros11024','5/7/2025Press de Hombros11024','5/7/2025Triceps1816','5/7/2025Triceps1816','5/7/2025Triceps1816',
+            '5/9/2025Peso Muerto Hex1580','5/9/2025Peso Muerto Hex1585','5/9/2025Peso Muerto Hex1685','5/9/2025Sentadilla11036','5/9/2025Sentadilla11036','5/9/2025Sentadilla11036','5/9/2025Biceps1719','5/9/2025Biceps1619','5/9/2025Biceps1619','5/9/2025Pecho Anillas1100','5/9/2025Pecho Anillas1100','5/9/2025Pecho Anillas1100','5/9/2025Remo Anillas1100','5/9/2025Remo Anillas1100','5/9/2025Remo Anillas1100','5/9/2025Press de Hombros11026','5/9/2025Press de Hombros11026','5/9/2025Press de Hombros1826','5/9/2025Triceps11016','5/9/2025Triceps11016','5/9/2025Triceps11216',
+            '5/12/2025Peso Muerto Hex11075','5/12/2025Peso Muerto Hex21075','5/12/2025Peso Muerto Hex31075','5/12/2025Sentadilla11036','5/12/2025Sentadilla21036','5/12/2025Sentadilla31036','5/12/2025Biceps11016','5/12/2025Biceps21016','5/12/2025Biceps31016','5/12/2025Pecho Anillas1100','5/12/2025Pecho Anillas2100','5/12/2025Pecho Anillas3100','5/12/2025Remo Anillas1100','5/12/2025Remo Anillas2100','5/12/2025Remo Anillas3100','5/12/2025Press de Hombros11026','5/12/2025Press de Hombros21026','5/12/2025Press de Hombros31026','5/12/2025Triceps11016','5/12/2025Triceps21016','5/12/2025Triceps31016',
+            '5/14/2025Peso Muerto Hex11075','5/14/2025Peso Muerto Hex21075','5/14/2025Peso Muerto Hex31075','5/14/2025Sentadilla11036','5/14/2025Sentadilla21036','5/14/2025Sentadilla31036','5/14/2025Biceps11016','5/14/2025Biceps21016','5/14/2025Biceps31016','5/14/2025Pecho Anillas1100','5/14/2025Pecho Anillas2100','5/14/2025Pecho Anillas3100','5/14/2025Remo Anillas1100','5/14/2025Remo Anillas2100','5/14/2025Remo Anillas3100','5/14/2025Press de Hombros11026','5/14/2025Press de Hombros21026','5/14/2025Press de Hombros31026','5/14/2025Triceps11216','5/14/2025Triceps21216','5/14/2025Triceps31216',
+            '5/16/2025Peso Muerto Hex11075','5/16/2025Peso Muerto Hex21075','5/16/2025Peso Muerto Hex31075','5/16/2025Sentadilla11036','5/16/2025Sentadilla21036','5/16/2025Sentadilla31036','5/16/2025Biceps11016','5/16/2025Biceps21016','5/16/2025Biceps31016','5/16/2025Pecho Anillas1100','5/16/2025Pecho Anillas2100','5/16/2025Pecho Anillas3100','5/16/2025Remo Anillas1100','5/16/2025Remo Anillas2100','5/16/2025Remo Anillas3100','5/16/2025Press de Hombros11026','5/16/2025Press de Hombros21026','5/16/2025Press de Hombros31026','5/16/2025Triceps11016','5/16/2025Triceps21016','5/16/2025Triceps31016',
+            '5/19/2025Peso Muerto Hex11075','5/19/2025Peso Muerto Hex21075','5/19/2025Peso Muerto Hex31075','5/19/2025Sentadilla11036','5/19/2025Sentadilla21036','5/19/2025Sentadilla31036','5/19/2025Biceps11016','5/19/2025Biceps21016','5/19/2025Biceps31016','5/19/2025Pecho Anillas1100','5/19/2025Pecho Anillas2100','5/19/2025Pecho Anillas3100','5/19/2025Remo Anillas1100','5/19/2025Remo Anillas2100','5/19/2025Remo Anillas3100','5/19/2025Press de Hombros11026','5/19/2025Press de Hombros21026','5/19/2025Press de Hombros31026','5/19/2025Triceps11016','5/19/2025Triceps21016','5/19/2025Triceps31016',
+            '5/21/2025Peso Muerto Hex11075','5/21/2025Peso Muerto Hex21075','5/21/2025Peso Muerto Hex31075','5/21/2025Sentadilla11036','5/21/2025Sentadilla21036','5/21/2025Sentadilla31036','5/21/2025Biceps100','5/21/2025Biceps200','5/21/2025Biceps300','5/21/2025Pecho Anillas1100','5/21/2025Pecho Anillas2100','5/21/2025Pecho Anillas3100','5/21/2025Remo Anillas1100','5/21/2025Remo Anillas2100','5/21/2025Remo Anillas3100','5/21/2025Press de Hombros11026','5/21/2025Press de Hombros21026','5/21/2025Press de Hombros31026','5/21/2025Triceps11016','5/21/2025Triceps21016','5/21/2025Triceps31016',
+            '5/23/2025Peso Muerto Hex1480','5/23/2025Peso Muerto Hex2490','5/23/2025Peso Muerto Hex3493','5/23/2025Sentadilla11036','5/23/2025Sentadilla21036','5/23/2025Sentadilla31039','5/23/2025Biceps11016','5/23/2025Biceps21016','5/23/2025Biceps31016','5/23/2025Pecho Anillas1100','5/23/2025Pecho Anillas2100','5/23/2025Pecho Anillas3100','5/23/2025Remo Anillas1100','5/23/2025Remo Anillas2100','5/23/2025Remo Anillas3100','5/23/2025Press de Hombros11029','5/23/2025Press de Hombros21029','5/23/2025Press de Hombros31029','5/23/2025Triceps11216','5/23/2025Triceps21216','5/23/2025Triceps31216',
+            '5/26/2025Peso Muerto Hex11078','5/26/2025Peso Muerto Hex21078','5/26/2025Peso Muerto Hex31078','5/26/2025Sentadilla11041','5/26/2025Sentadilla21041','5/26/2025Sentadilla31041','5/26/2025Biceps11016','5/26/2025Biceps21016','5/26/2025Biceps31016','5/26/2025Pecho Anillas1100','5/26/2025Pecho Anillas2100','5/26/2025Pecho Anillas3100','5/26/2025Remo Anillas1100','5/26/2025Remo Anillas2100','5/26/2025Remo Anillas3100','5/26/2025Press de Hombros1829','5/26/2025Press de Hombros2829','5/26/2025Press de Hombros3729','5/26/2025Triceps11216','5/26/2025Triceps21216','5/26/2025Triceps31216',
+            '5/28/2025Peso Muerto Hex11080','5/28/2025Peso Muerto Hex21080','5/28/2025Peso Muerto Hex31080','5/28/2025Sentadilla11041','5/28/2025Sentadilla21041','5/28/2025Sentadilla31041','5/28/2025Biceps11016','5/28/2025Biceps21016','5/28/2025Biceps31016','5/28/2025Pecho Anillas1100','5/28/2025Pecho Anillas2100','5/28/2025Pecho Anillas3100','5/28/2025Remo Anillas1100','5/28/2025Remo Anillas2100','5/28/2025Remo Anillas3100','5/28/2025Press de Hombros1831','5/28/2025Press de Hombros2831','5/28/2025Press de Hombros3831','5/28/2025Triceps Pushdowns11020','5/28/2025Triceps Pushdowns21020','5/28/2025Triceps Pushdowns31020',
+            '5/30/2025Peso Muerto Hex11080','5/30/2025Peso Muerto Hex21080','5/30/2025Peso Muerto Hex31080','5/30/2025Sentadilla11041','5/30/2025Sentadilla21041','5/30/2025Sentadilla31041','5/30/2025Biceps11016','5/30/2025Biceps21016','5/30/2025Biceps31016','5/30/2025Pecho Anillas1100','5/30/2025Pecho Anillas2100','5/30/2025Pecho Anillas3100','5/30/2025Remo Anillas1100','5/30/2025Remo Anillas2100','5/30/2025Remo Anillas3100','5/30/2025Press de Hombros11031','5/30/2025Press de Hombros21031','5/30/2025Press de Hombros31031','5/30/2025Triceps Pushdowns11020','5/30/2025Triceps Pushdowns21020','5/30/2025Triceps Pushdowns31020'
+        ];
+
+        const chartBaseFontColor = '#D1D5DB';
+        const chartGridColor = 'rgba(107, 114, 128, 0.2)';
+        const referenceDateStr = '4/29/2025'; 
+        let originalMaxWeightsMapGlobal = new Map(); 
+
+        const exerciseColors = {
+            'Peso Muerto Hex': '#00F0B5',    
+            'Sentadilla': '#00E0F0',       
+            'Biceps': '#7060F0',           
+            'Pecho Anillas': '#F000B0',    
+            'Remo Anillas': '#F0C000',     
+            'Press de Hombros': '#F97316', 
+            'Triceps': '#EC4899',
+            'Triceps Pushdowns': '#8B5CF6' 
+        };
+        
+        function parseTrainingData(rawDataStrings) {
+            const definedExerciseNames = Object.keys(exerciseColors); 
+            const parsedEntries = [];
+            rawDataStrings.forEach(entry => {
+                const dateMatch = entry.match(/^(\d{1,2}\/\d{1,2}\/\d{4})/);
+                if (!dateMatch) return;
+                const dateStr = dateMatch[0];
+                let restOfEntry = entry.substring(dateStr.length);
+                
+                let currentExercise = "";
+                for (const name of definedExerciseNames) {
+                    if (restOfEntry.startsWith(name)) {
+                        currentExercise = name;
+                        break;
+                    }
+                }
+                if (currentExercise === "") return; 
+                
+                restOfEntry = restOfEntry.substring(currentExercise.length);
+                
+                const setMatch = restOfEntry.match(/^(\d)/);
+                if (!setMatch) return; 
+                const setNumber = parseInt(setMatch[0], 10);
+                const performanceMetrics = restOfEntry.substring(setMatch[0].length);
+                
+                let repsValue, weightValue;
+                if (currentExercise.includes("Anillas")) {
+                    weightValue = 0; 
+                    let potentialReps = performanceMetrics;
+                    if (performanceMetrics.length > 1 && performanceMetrics.endsWith('0')) {
+                         potentialReps = performanceMetrics.slice(0, -1);
+                    } else if (performanceMetrics === '0') { 
+                         potentialReps = '0';
+                    }
+                    repsValue = parseInt(potentialReps, 10);
+                } else {
+                    const weightStr = performanceMetrics.slice(-2);
+                    const repStr = performanceMetrics.slice(0, -2);
+                    weightValue = parseInt(weightStr, 10);
+                    repsValue = repStr === "" ? 0 : parseInt(repStr, 10); 
+                }
+
+                if (!isNaN(repsValue) && !isNaN(weightValue) && !isNaN(setNumber)) {
+                     parsedEntries.push({ 
+                        date: dateStr, 
+                        exercise: currentExercise, 
+                        set: setNumber, 
+                        reps: repsValue, 
+                        weight: weightValue,
+                    });
+                }
+            });
+            return parsedEntries;
+        }
+        
+        const chartTooltipTitleCallback = (tooltipItems) => {
+            const item = tooltipItems[0];
+            let label = item.chart.data.labels[item.dataIndex];
+            return Array.isArray(label) ? label.join(' ') : label;
+        };
+        
+        function prepareChartDataAndOriginals(allData, uniqueDatesSorted, exerciseNames) {
+            const JITTER_AMOUNT = 0.20; 
+            const BODYWEIGHT_OFFSET_REMO = -0.4; 
+            
+            const adjustedDataMap = new Map(); 
+            originalMaxWeightsMapGlobal = new Map(); 
+
+            exerciseNames.forEach(name => {
+                adjustedDataMap.set(name, new Array(uniqueDatesSorted.length).fill(null));
+                originalMaxWeightsMapGlobal.set(name, new Array(uniqueDatesSorted.length).fill(null));
+            });
+
+            uniqueDatesSorted.forEach((date, dateIndex) => {
+                exerciseNames.forEach(exerciseName => {
+                    const entries = allData.filter(d => d.date === date && d.exercise === exerciseName);
+                    if (entries.length > 0) {
+                        const allSetsZeroPerformance = entries.every(e => e.reps === 0 && e.weight === 0);
+                        if (allSetsZeroPerformance) {
+                            originalMaxWeightsMapGlobal.get(exerciseName)[dateIndex] = null; 
+                        } else {
+                            originalMaxWeightsMapGlobal.get(exerciseName)[dateIndex] = Math.max(...entries.map(e => e.weight));
+                        }
+                    }
+                });
+            });
+
+            uniqueDatesSorted.forEach((date, dateIndex) => {
+                const dailyOriginalMaxWeights = []; 
+                exerciseNames.forEach(exerciseName => {
+                    const originalWeight = originalMaxWeightsMapGlobal.get(exerciseName)[dateIndex];
+                    if (originalWeight !== null) {
+                        dailyOriginalMaxWeights.push({ exerciseName, weight: originalWeight });
+                    }
+                });
+                
+                const pechoAnillasOriginal = originalMaxWeightsMapGlobal.get('Pecho Anillas')?.[dateIndex];
+                const remoAnillasOriginal = originalMaxWeightsMapGlobal.get('Remo Anillas')?.[dateIndex];
+
+                if (pechoAnillasOriginal === 0) {
+                    adjustedDataMap.get('Pecho Anillas')[dateIndex] = 0;
+                }
+                if (remoAnillasOriginal === 0) {
+                    adjustedDataMap.get('Remo Anillas')[dateIndex] = (pechoAnillasOriginal === 0) ? BODYWEIGHT_OFFSET_REMO : 0;
+                }
+                
+                const weightsToJitter = dailyOriginalMaxWeights
+                    .filter(e => !((e.exerciseName === 'Pecho Anillas' || e.exerciseName === 'Remo Anillas') && e.weight === 0))
+                    .reduce((acc, item) => {
+                        (acc[item.weight] = acc[item.weight] || []).push(item.exerciseName);
+                        return acc;
+                    }, {});
+
+                Object.entries(weightsToJitter).forEach(([weightStr, competingExercises]) => {
+                    const originalWeightVal = parseFloat(weightStr);
+                    if (competingExercises.length > 1) {
+                        const groupSize = competingExercises.length;
+                        competingExercises.forEach((exName, indexInGroup) => {
+                            if (originalWeightVal === 0) { 
+                                adjustedDataMap.get(exName)[dateIndex] = 0; 
+                                return;
+                            }
+                            const offset = (indexInGroup - (groupSize - 1) / 2) * JITTER_AMOUNT;
+                            adjustedDataMap.get(exName)[dateIndex] = originalWeightVal + offset;
+                        });
+                    } else if (competingExercises.length === 1) {
+                        const exName = competingExercises[0];
+                        if (adjustedDataMap.get(exName)[dateIndex] === null) { 
+                           adjustedDataMap.get(exName)[dateIndex] = originalWeightVal;
+                        }
+                    }
+                });
+                exerciseNames.forEach(exName => {
+                    if (adjustedDataMap.get(exName)[dateIndex] === null && originalMaxWeightsMapGlobal.get(exName)[dateIndex] !== null) {
+                        if (!((exName === 'Pecho Anillas' || exName === 'Remo Anillas') && originalMaxWeightsMapGlobal.get(exName)[dateIndex] === 0)) {
+                             adjustedDataMap.get(exName)[dateIndex] = originalMaxWeightsMapGlobal.get(exName)[dateIndex];
+                        }
+                    }
+                });
+            });
+            return adjustedDataMap; 
+        }
+
+        function calculateAndDisplayPercentageIncreases(allData, allUniqueDatesSorted, exerciseNames) {
+            const tableBody = document.getElementById('percentageIncreaseTableBody');
+            tableBody.innerHTML = ''; 
+
+            const currentBloqueDates = allUniqueDatesSorted.filter(date => date !== referenceDateStr);
+
+            exerciseNames.forEach(exerciseName => {
+                const bloqueAnteriorMaxWeight = originalMaxWeightsMapGlobal.get(exerciseName)?.[allUniqueDatesSorted.indexOf(referenceDateStr)];
+
+                let latestBloqueMaxWeight = null;
+                for (let i = currentBloqueDates.length - 1; i >= 0; i--) {
+                    const date = currentBloqueDates[i];
+                    const dateIndexInAll = allUniqueDatesSorted.indexOf(date);
+                    const weightOnDate = originalMaxWeightsMapGlobal.get(exerciseName)?.[dateIndexInAll];
+                    if (weightOnDate !== null && weightOnDate !== undefined) {
+                        latestBloqueMaxWeight = weightOnDate;
+                        break; 
+                    }
+                }
+
+                let percentageIncreaseText = "N/A";
+                let increaseClass = "increase-neutral";
+
+                if (bloqueAnteriorMaxWeight !== null && bloqueAnteriorMaxWeight !== undefined && latestBloqueMaxWeight !== null) {
+                    if (bloqueAnteriorMaxWeight === 0 && latestBloqueMaxWeight > 0) {
+                        percentageIncreaseText = "Nuevo Máx.";
+                        increaseClass = "increase-positive";
+                    } else if (bloqueAnteriorMaxWeight === 0 && latestBloqueMaxWeight === 0) {
+                        percentageIncreaseText = "0.0%";
+                    } else if (bloqueAnteriorMaxWeight > 0) {
+                        const increase = ((latestBloqueMaxWeight - bloqueAnteriorMaxWeight) / bloqueAnteriorMaxWeight) * 100;
+                        percentageIncreaseText = increase.toFixed(1) + "%";
+                        if (increase > 0) increaseClass = "increase-positive";
+                        else if (increase < 0) increaseClass = "increase-negative";
+                    }
+                } else if ((bloqueAnteriorMaxWeight === null || bloqueAnteriorMaxWeight === undefined) && latestBloqueMaxWeight !== null) {
+                    percentageIncreaseText = "Nuevo Ejercicio";
+                    increaseClass = "increase-positive";
+                } else if (bloqueAnteriorMaxWeight !== null && bloqueAnteriorMaxWeight !== undefined && latestBloqueMaxWeight === null) {
+                    percentageIncreaseText = "No en bloque actual";
+                }
+                
+                const row = `<tr>
+                                <td>${exerciseName}</td>
+                                <td>${(bloqueAnteriorMaxWeight !== null && bloqueAnteriorMaxWeight !== undefined) ? bloqueAnteriorMaxWeight + ' kg' : 'N/A'}</td>
+                                <td>${latestBloqueMaxWeight !== null ? latestBloqueMaxWeight + ' kg' : 'N/A'}</td>
+                                <td class="${increaseClass}">${percentageIncreaseText}</td>
+                             </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const allTrainingData = parseTrainingData(rawClientData);
+
+            const allUniqueDatesSorted = [...new Set(allTrainingData.map(d => d.date))]
+                .sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+            
+            const bloqueDataForStats = allTrainingData.filter(d => d.date !== referenceDateStr);
+            const uniqueDatesForStats = [...new Set(bloqueDataForStats.map(d => d.date))]
+                .sort((a,b) => new Date(a.split('/').reverse().join('-')) - new Date(b.split('/').reverse().join('-')));
+
+
+            const bloqueStartDateStr = uniqueDatesForStats.length > 0 ? new Date(uniqueDatesForStats[0]).toLocaleDateString('es-ES', {day:'numeric', month:'numeric', year:'numeric'}) : "N/A";
+            const bloqueEndDateStr = uniqueDatesForStats.length > 0 ? new Date(uniqueDatesForStats[uniqueDatesForStats.length - 1]).toLocaleDateString('es-ES', {day:'numeric', month:'numeric', year:'numeric'}) : "N/A";
+            document.getElementById('summaryBloqueTitle').textContent = `Resumen del Bloque de Entrenamiento ${bloqueStartDateStr} - ${bloqueEndDateStr}`;
+            
+            document.getElementById('statTotalSessions').textContent = uniqueDatesForStats.length;
+            const totalRepsForBloque = bloqueDataForStats.reduce((sum, item) => sum + item.reps, 0);
+            document.getElementById('statTotalReps').textContent = totalRepsForBloque.toLocaleString('es-ES');
+            document.getElementById('statTotalSets').textContent = bloqueDataForStats.length.toLocaleString('es-ES');
+
+            const exerciseNames = Object.keys(exerciseColors).sort();
+            renderExerciseWeightProgressChart(allTrainingData, allUniqueDatesSorted, exerciseNames);
+            calculateAndDisplayPercentageIncreases(allTrainingData, allUniqueDatesSorted, exerciseNames);
+        });
+
+        function renderExerciseWeightProgressChart(allData, uniqueDatesSorted, exerciseNames) {
+            const formattedXAxisLabels = uniqueDatesSorted.map(d => {
+                if (d === referenceDateStr) return "Bloque Anterior";
+                return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+            });
+
+            const adjustedDataMap = prepareChartDataAndOriginals(allData, uniqueDatesSorted, exerciseNames);
+
+            const datasets = exerciseNames.map(exerciseName => {
+                return {
+                    label: exerciseName,
+                    data: adjustedDataMap.get(exerciseName), 
+                    borderColor: exerciseColors[exerciseName] || '#CCCCCC', 
+                    backgroundColor: exerciseColors[exerciseName] ? (exerciseColors[exerciseName] + 'AA') : '#CCCCCCAA', 
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBorderColor: exerciseColors[exerciseName] || '#CCCCCC',
+                    spanGaps: false 
+                };
+            });
+
+            new Chart(document.getElementById('exerciseWeightProgressChart'), {
+                type: 'line',
+                data: {
+                    labels: formattedXAxisLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                color: chartBaseFontColor, 
+                                usePointStyle: true,
+                                boxWidth: 10,
+                                padding: 20,
+                                font: { size: 11 }
+                            } 
+                        }, 
+                        tooltip: { 
+                            callbacks: { 
+                                title: chartTooltipTitleCallback,
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+
+                                    const exerciseName = context.dataset.label;
+                                    const dateIndex = context.dataIndex;
+                                    const originalWeight = originalMaxWeightsMapGlobal.get(exerciseName)?.[dateIndex];
+
+                                    if (originalWeight !== null && originalWeight !== undefined) {
+                                        label += originalWeight + ' kg';
+                                    } else if (exerciseName.includes("Anillas") && context.parsed.y <=0 && context.parsed.y !== null) { 
+                                        label += '0 kg'; 
+                                    } else if (context.parsed.y === null){
+                                        return null; 
+                                    }
+                                     else {
+                                        label += parseFloat(context.parsed.y.toFixed(2)) + ' kg';
+                                    }
+                                    return label;
+                                }
+                            },
+                            mode: 'index',
+                            intersect: false
+                        } 
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Peso (kg)', color: chartBaseFontColor, font: {size: 12} },
+                            grid: { color: chartGridColor }, 
+                            ticks: { 
+                                color: chartBaseFontColor, 
+                                font: { size: 10 },
+                                callback: function(value, index, values) {
+                                    return value < 0 ? '' : value; 
+                                }
+                            } 
+                        },
+                        x: { 
+                            title: { display: true, text: 'Fecha', color: chartBaseFontColor, font: {size: 12} },
+                            grid: { display: false }, 
+                            ticks: { color: chartBaseFontColor, font: { size: 10 }, maxRotation: 45, minRotation: 30 } 
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                }
+            });
+        }
+    </script>
+</body>
+</html>
